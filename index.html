@@ -2,286 +2,144 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NRL Scoreboard Ultimate</title>
+<title>Simple Rugby League Scoreboard</title>
 
 <style>
-body {margin:0;font-family:Arial;background:#0b0f1a;color:white;}
-#scoreboard {
-  display:flex;justify-content:space-between;align-items:center;
-  background:#111827;padding:15px;border-bottom:3px solid #00e5ff;
+body {
+  font-family: Arial;
+  background:#111;
+  color:white;
+  text-align:center;
 }
-.teamBox {display:flex;align-items:center;gap:10px;}
-.teamBox img {width:50px;height:50px;}
-.score {font-size:40px;font-weight:bold;}
-#clockBox{text-align:center;}
-#clock{font-size:30px;}
-.container{display:flex;justify-content:space-around;padding:20px;}
-.panel{width:40%;background:#1f2937;padding:15px;border-radius:10px;}
-button{padding:12px;margin:5px;font-size:16px;border:none;border-radius:5px;cursor:pointer;}
-.try{background:#22c55e;} .conv{background:#3b82f6;}
-.pen{background:#f59e0b;} .fg{background:#a855f7;}
-.neg{background:#ef4444;}
-select,input,textarea{width:100%;margin:5px 0;padding:8px;}
-#events{background:#020617;padding:10px;height:200px;overflow-y:auto;}
-table{border-collapse:collapse;}
-td,th{padding:5px;}
+
+.scoreboard {
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  margin-top:40px;
+}
+
+.team {
+  width:40%;
+}
+
+.team img {
+  width:100px;
+  height:100px;
+  object-fit:contain;
+}
+
+.score {
+  font-size:60px;
+  margin:10px;
+}
+
+#clock {
+  font-size:40px;
+  margin-top:20px;
+}
+
+button {
+  padding:10px;
+  margin:5px;
+  font-size:16px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- SCOREBOARD -->
-<div id="scoreboard">
-  <div class="teamBox"><img id="logoA"><span id="nameA">Team A</span></div>
-  <div class="score" id="scoreA">0</div>
+<h1>Rugby League Scoreboard</h1>
 
-  <div id="clockBox">
-    <div id="clock">00:00</div>
-    <div id="half">1st Half</div>
-  </div>
-
-  <div class="score" id="scoreB">0</div>
-  <div class="teamBox"><span id="nameB">Team B</span><img id="logoB"></div>
-</div>
-
-<!-- FIXTURES -->
-<div style="padding:10px;background:#111827;">
-  <h3>Fixtures</h3>
-  <input id="fixtureName" placeholder="Match Name">
-  <button onclick="saveFixture()">Save Fixture</button>
-  <select id="fixtureList" onchange="loadFixture()"></select>
-</div>
-
-<!-- CONTROLS -->
-<div class="container">
-
-<div class="panel">
-<h3>Team A</h3>
-<input id="inputNameA" placeholder="Team Name">
-<input type="file" id="uploadA">
-<textarea id="playersA"></textarea>
-<select id="selectA"></select>
-
-<button class="try" onclick="score('A',4,'Try')">Try</button>
-<button class="conv" onclick="score('A',2,'Conversion')">Conversion</button>
-<button class="pen" onclick="score('A',2,'Penalty')">Penalty</button>
-<button class="fg" onclick="score('A',1,'Field Goal')">FG</button>
-<button class="neg" onclick="score('A',-1,'Error')">-1</button>
-</div>
-
-<div class="panel">
-<h3>Team B</h3>
-<input id="inputNameB" placeholder="Team Name">
-<input type="file" id="uploadB">
-<textarea id="playersB"></textarea>
-<select id="selectB"></select>
-
-<button class="try" onclick="score('B',4,'Try')">Try</button>
-<button class="conv" onclick="score('B',2,'Conversion')">Conversion</button>
-<button class="pen" onclick="score('B',2,'Penalty')">Penalty</button>
-<button class="fg" onclick="score('B',1,'Field Goal')">FG</button>
-<button class="neg" onclick="score('B',-1,'Error')">-1</button>
-</div>
-
-</div>
-
-<h3 style="padding:10px;">Events</h3>
-<div id="events"></div>
-
-<!-- LADDER -->
-<h3 style="padding:10px;">Ladder</h3>
-<table id="ladder" border="1" style="width:100%;text-align:center;background:#020617;">
-<thead>
-<tr><th>Team</th><th>P</th><th>W</th><th>L</th><th>D</th><th>PF</th><th>PA</th><th>Pts</th></tr>
-</thead>
-<tbody></tbody>
-</table>
-
-<!-- PLAYER STATS -->
-<h3 style="padding:10px;">Top Try Scorers</h3>
-<div id="topScorers"></div>
-
-<!-- CONTROLS -->
-<div style="padding:10px;">
+<div id="clock">00:00</div>
 <button onclick="startClock()">Start</button>
 <button onclick="pauseClock()">Pause</button>
 <button onclick="resetClock()">Reset</button>
-<button onclick="toggleHalf()">Toggle Half</button>
-<button onclick="recordMatch()">Record Match</button>
-<button onclick="resetSeason()">Reset Season</button>
-<button onclick="fullscreen()">Fullscreen</button>
+
+<div class="scoreboard">
+
+  <!-- TEAM A -->
+  <div class="team">
+    <input id="nameA" placeholder="Team A"><br>
+    <input type="file" id="logoA"><br>
+    <img id="imgA"><br>
+
+    <div class="score" id="scoreA">0</div>
+
+    <button onclick="addScore('A',4)">Try (+4)</button>
+    <button onclick="addScore('A',2)">Goal (+2)</button>
+    <button onclick="addScore('A',1)">FG (+1)</button>
+    <button onclick="addScore('A',-1)">-1</button>
+  </div>
+
+  <!-- TEAM B -->
+  <div class="team">
+    <input id="nameB" placeholder="Team B"><br>
+    <input type="file" id="logoB"><br>
+    <img id="imgB"><br>
+
+    <div class="score" id="scoreB">0</div>
+
+    <button onclick="addScore('B',4)">Try (+4)</button>
+    <button onclick="addScore('B',2)">Goal (+2)</button>
+    <button onclick="addScore('B',1)">FG (+1)</button>
+    <button onclick="addScore('B',-1)">-1</button>
+  </div>
+
 </div>
 
-<!-- AUDIO -->
-<audio id="crowd" src="https://www.soundjay.com/human/crowd-cheer-01.mp3"></audio>
-<audio id="trySound" src="https://www.soundjay.com/human/applause-8.mp3"></audio>
-
 <script>
-// STATE
-let scoreA=0, scoreB=0, sec=0, timer=null, half=1;
-let ladderData=JSON.parse(localStorage.getItem("ladderData")||"{}");
-let playerStats=JSON.parse(localStorage.getItem("playerStats")||"{}");
+// SCORES
+let scoreA = 0;
+let scoreB = 0;
+
+function addScore(team, pts){
+  if(team === 'A'){
+    scoreA += pts;
+    document.getElementById("scoreA").innerText = scoreA;
+  } else {
+    scoreB += pts;
+    document.getElementById("scoreB").innerText = scoreB;
+  }
+}
 
 // CLOCK
+let seconds = 0;
+let timer = null;
+
 function updateClock(){
-  sec++;
-  let m=Math.floor(sec/60), s=sec%60;
-  clock.innerText=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-function startClock(){ if(!timer) timer=setInterval(updateClock,1000);}
-function pauseClock(){ clearInterval(timer); timer=null;}
-function resetClock(){ pauseClock(); sec=0; clock.innerText="00:00";}
-
-// HALF
-function toggleHalf(){
-  half=half===1?2:1;
-  halfEl.innerText=half===1?"1st Half":"2nd Half";
+  seconds++;
+  let m = Math.floor(seconds/60);
+  let s = seconds % 60;
+  document.getElementById("clock").innerText =
+    String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
 }
 
-// EVENTS
-function addEvent(text){
-  let div=document.createElement("div");
-  div.innerText=text;
-  events.prepend(div);
+function startClock(){
+  if(!timer) timer = setInterval(updateClock,1000);
 }
 
-// PLAYER STATS
-function addTry(player){
-  if(!playerStats[player]) playerStats[player]=0;
-  playerStats[player]++;
-  localStorage.setItem("playerStats",JSON.stringify(playerStats));
-  renderTopScorers();
+function pauseClock(){
+  clearInterval(timer);
+  timer = null;
 }
 
-// SCORE
-function score(team,pts,type){
-  let player=(team==='A'?selectA.value:selectB.value);
-  let min=Math.floor(sec/60);
-
-  if(team==='A'){scoreA+=pts;scoreAEl.innerText=scoreA;}
-  else{scoreB+=pts;scoreBEl.innerText=scoreB;}
-
-  addEvent(`${min}' ${player} - ${type}`);
-
-  if(type==="Try"){
-    document.getElementById("trySound").play();
-    addTry(player);
-  } else {
-    document.getElementById("crowd").play();
-  }
-
-  if(type==="Try"){
-    setTimeout(()=>{
-      if(confirm("Conversion successful?")){
-        score(team,2,"Conversion");
-      }
-    },300);
-  }
+function resetClock(){
+  pauseClock();
+  seconds = 0;
+  document.getElementById("clock").innerText = "00:00";
 }
 
-// PLAYERS
-function updatePlayers(){
-  selectA.innerHTML="";
-  playersA.value.split("\n").forEach(p=>{
-    if(p.trim()){let o=document.createElement("option");o.text=p;selectA.add(o);}
-  });
-  selectB.innerHTML="";
-  playersB.value.split("\n").forEach(p=>{
-    if(p.trim()){let o=document.createElement("option");o.text=p;selectB.add(o);}
-  });
-}
-playersA.oninput=updatePlayers;
-playersB.oninput=updatePlayers;
+// LOGOS
+document.getElementById("logoA").onchange = e => {
+  document.getElementById("imgA").src =
+    URL.createObjectURL(e.target.files[0]);
+};
 
-// TEAM SETTINGS
-inputNameA.oninput=()=>nameA.innerText=inputNameA.value;
-inputNameB.oninput=()=>nameB.innerText=inputNameB.value;
-uploadA.onchange=e=>logoA.src=URL.createObjectURL(e.target.files[0]);
-uploadB.onchange=e=>logoB.src=URL.createObjectURL(e.target.files[0]);
-
-// FIXTURES
-function saveFixture(){
-  let data={A:inputNameA.value,B:inputNameB.value,playersA:playersA.value,playersB:playersB.value};
-  localStorage.setItem(fixtureName.value,JSON.stringify(data));
-  loadFixtureList();
-}
-function loadFixtureList(){
-  fixtureList.innerHTML="";
-  for(let i=0;i<localStorage.length;i++){
-    let k=localStorage.key(i);
-    let o=document.createElement("option");o.text=k;fixtureList.add(o);
-  }
-}
-function loadFixture(){
-  let d=JSON.parse(localStorage.getItem(fixtureList.value));
-  inputNameA.value=d.A;inputNameB.value=d.B;
-  playersA.value=d.playersA;playersB.value=d.playersB;
-  updatePlayers();
-}
-
-// LADDER
-function initTeam(name){
-  if(!ladderData[name]){
-    ladderData[name]={P:0,W:0,L:0,D:0,PF:0,PA:0,PTS:0};
-  }
-}
-function recordMatch(){
-  let A=inputNameA.value,B=inputNameB.value;
-  initTeam(A);initTeam(B);
-
-  ladderData[A].P++;ladderData[B].P++;
-  ladderData[A].PF+=scoreA;ladderData[A].PA+=scoreB;
-  ladderData[B].PF+=scoreB;ladderData[B].PA+=scoreA;
-
-  if(scoreA>scoreB){ladderData[A].W++;ladderData[A].PTS+=2;ladderData[B].L++;}
-  else if(scoreB>scoreA){ladderData[B].W++;ladderData[B].PTS+=2;ladderData[A].L++;}
-  else{ladderData[A].D++;ladderData[B].D++;ladderData[A].PTS++;ladderData[B].PTS++;}
-
-  localStorage.setItem("ladderData",JSON.stringify(ladderData));
-  renderLadder();
-}
-
-function renderLadder(){
-  let tbody=document.querySelector("#ladder tbody");
-  tbody.innerHTML="";
-  Object.entries(ladderData)
-    .sort((a,b)=>b[1].PTS-a[1].PTS)
-    .forEach(([name,d])=>{
-      tbody.innerHTML+=`<tr>
-      <td>${name}</td><td>${d.P}</td><td>${d.W}</td>
-      <td>${d.L}</td><td>${d.D}</td>
-      <td>${d.PF}</td><td>${d.PA}</td><td>${d.PTS}</td></tr>`;
-    });
-}
-
-// TOP SCORERS
-function renderTopScorers(){
-  let div=document.getElementById("topScorers");
-  div.innerHTML="";
-  Object.entries(playerStats)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,10)
-    .forEach(([p,s])=>{
-      div.innerHTML+=`${p}: ${s} tries<br>`;
-    });
-}
-
-// RESET
-function resetSeason(){
-  if(confirm("Reset everything?")){
-    ladderData={};playerStats={};
-    localStorage.clear();
-    renderLadder();renderTopScorers();
-  }
-}
-
-// FULLSCREEN
-function fullscreen(){document.documentElement.requestFullscreen();}
-
-// INIT
-loadFixtureList();
-renderLadder();
-renderTopScorers();
+document.getElementById("logoB").onchange = e => {
+  document.getElementById("imgB").src =
+    URL.createObjectURL(e.target.files[0]);
+};
 </script>
 
 </body>
