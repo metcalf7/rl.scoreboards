@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NRL Match Centre - Live Sync</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --nrl-green: #00b74f;
+            --nrl-dark: #0a1612;
+            --nrl-card: #14221e;
+            --nrl-border: #263833;
+            --gold: #ffd700;
+        }
+
+        body { background-color: var(--nrl-dark); color: #ffffff; font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        header { width: 100%; background: #000; border-bottom: 3px solid var(--nrl-green); padding: 10px 0; text-align: center; font-family: 'Oswald', sans-serif; letter-spacing: 2px; font-size: 24px; }
+
+        /* ACCESS CONTROL BAR */
+        .access-bar { background: #000; width: 100%; padding: 5px; text-align: center; font-size: 10px; border-bottom: 1px solid #333; }
+        .access-bar input { background: #111; border: 1px solid #444; color: white; padding: 2px; }
+
+        .match-header {
+            width: 100%; max-width: 1100px; background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+            display: grid; grid-template-columns: 1fr 180px 1fr; padding: 40px 0; margin-top: 20px;
+            border-radius: 8px; border: 1px solid var(--nrl-border);
+        }
+
+        .team-display { display: flex; align-items: center; justify-content: center; gap: 30px; }
+        .team-logo { width: 100px; height: 100px; object-fit: contain; }
+        .team-name { font-family: 'Oswald', sans-serif; font-size: 32px; text-transform: uppercase; }
+        .big-score { font-size: 80px; font-weight: 900; }
+
+        .match-info { text-align: center; display: flex; flex-direction: column; justify-content: center; border-left: 1px solid var(--nrl-border); border-right: 1px solid var(--nrl-border); }
+        .clock { font-size: 36px; font-weight: bold; color: var(--gold); font-family: monospace; }
+
+        .container { width: 95%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .panel { background: var(--nrl-card); padding: 20px; border-radius: 12px; border: 1px solid var(--nrl-border); }
+
+        /* HIDE CLASS FOR VIEWERS */
+        .admin-only { display: none; }
+        .is-admin .admin-only { display: inline-block; }
+
+        .player-row { display: grid; grid-template-columns: 30px 1fr 40px auto; align-items: center; background: rgba(0,0,0,0.3); margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+        .btn-s { border: none; padding: 5px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; color: #fff; font-size: 10px; margin-left: 2px; }
+        .t { background: #1a5a1a; } .c { background: #5a4a1a; } .f { background: #3a1a5a; }
+        
+        .timeline { background: #000; height: 120px; overflow-y: scroll; padding: 15px; font-family: monospace; font-size: 12px; border: 1px solid var(--nrl-border); }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body id="main-body">
+
+<div class="access-bar">
+    Admin Access: <input type="password" id="pass-input" placeholder="Enter Password" oninput="checkAccess()">
+</div>
+
+<header>NRL MATCH CENTRE <span id="view-mode" style="font-size:12px; color:var(--nrl-green)">(VIEWER MODE)</span></header>
+
+<div id="match-view">
+    <div class="match-header">
+        <div class="team-display">
+            <div id="h-name-big" class="team-name">Home</div>
+            <div id="h-score-big" class="big-score">0</div>
+        </div>
+        <div class="match-info">
+            <div id="timer" class="clock">00:00</div>
+            <div class="admin-only">
+                <button class="btn-s" onclick="toggleClock()">START/PAUSE</button>
+            </div>
+        </div>
+        <div class="team-display" style="flex-direction: row-reverse;">
+            <div id="a-name-big" class="team-name">Away</div>
+            <div id="a-score-big" class="big-score">0</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h3>HOME SQUAD</h3>
+            <div class="admin-only">
+                <input type="text" id="h-team-input" placeholder="Change Team Name" onchange="updateTeamNames()">
+            </div>
+            <div id="home-squad"></div>
+        </div>
+        <div class="panel">
+            <h3>AWAY SQUAD</h3>
+            <div class="admin-only">
+                <input type="text" id="a-team-input" placeholder="Change Team Name" onchange="updateTeamNames()">
+            </div>
+            <div id="away-squad"></div>
+        </div>
+    </div>
+
+    <div class="panel" style="width: 90%; margin-top: 20px;">
+        <h3>MATCH TIMELINE</h3>
+        <div id="match-log" class="timeline"></div>
+        <div class="admin-only" style="margin-top:10px;">
+            <button class="btn-s" style="background:red" onclick="triggerSiren()">🚨 SIREN</button>
+            <button class="btn-s" style="background:#444" onclick="resetGame()">RESET ALL</button>
+        </div>
+    </div>
+</div>
+
+<audio id="siren-audio" src="https://actions.google.com/sounds/v1/alarms/bugle_tune.ogg"></audio>
+
+<script>
+    const SECRET = "admin123"; // CHANGE THIS TO YOUR PASSWORD
+    let state = { hScore: 0, aScore: 0, hName: "Broncos", aName: "Storm", log: [], seconds: 0 };
+
+    function checkAccess() {
+        const val = document.getElementById('pass-input').value;
+        if(val === SECRET) {
+            document.body.classList.add('is-admin');
+            document.getElementById('view-mode').innerText = "(ADMIN MODE)";
+        } else {
+            document.body.classList.remove('is-admin');
+            document.getElementById('view-mode').innerText = "(VIEWER MODE)";
+        }
+    }
+
+    function updateTeamNames() {
+        state.hName = document.getElementById('h-team-input').value || state.hName;
+        state.aName = document.getElementById('a-team-input').value || state.aName;
+        render();
+    }
+
+    function buildSquads() {
+        ['home', 'away'].forEach(side => {
+            const cont = document.getElementById(`${side}-squad`);
+            cont.innerHTML = Array.from({length: 17}, (_, i) => `
+                <div class="player-row">
+                    <span>${i+1}</span>
+                    <input type="text" placeholder="Player ${i+1}" id="${side}-p-${i}" class="admin-only">
+                    <span class="viewer-only" id="${side}-pn-${i}">Player ${i+1}</span>
+                    <span id="${side}-pts-${i}" style="color:var(--gold)">0</span>
+                    <div class="score-btns admin-only">
+                        <button class="btn-s t" onclick="addScore('${side}', ${i}, 4)">+4</button>
+                        <button class="btn-s c" onclick="addScore('${side}', ${i}, 2)">+2</button>
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    function addScore(side, pIdx, pts) {
+        const name = document.getElementById(`${side}-p-${pIdx}`).value || `Player ${pIdx+1}`;
+        if(side === 'home') state.hScore += pts; else state.aScore += pts;
+        state.log.unshift(`[${document.getElementById('timer').innerText}] ${name} scored +${pts}`);
+        render();
+        saveToCloud(); // See note below
+    }
+
+    function render() {
+        document.getElementById('h-name-big').innerText = state.hName;
+        document.getElementById('a-name-big').innerText = state.aName;
+        document.getElementById('h-score-big').innerText = state.hScore;
+        document.getElementById('a-score-big').innerText = state.aScore;
+        document.getElementById('match-log').innerHTML = state.log.map(l => `<div>${l}</div>`).join('');
+    }
+
+    let timer;
+    function toggleClock() {
+        if(timer) { clearInterval(timer); timer = null; }
+        else {
+            timer = setInterval(() => {
+                state.seconds++;
+                let m = Math.floor(state.seconds / 60).toString().padStart(2, '0');
+                let s = (state.seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+    }
+
+    function triggerSiren() { document.getElementById('siren-audio').play(); }
+    function resetGame() { if(confirm("Clear everything?")) location.reload(); }
+
+    buildSquads();
+    render();
+
+    // TO MAKE THIS SYNC ACROSS PHONES:
+    // You would normally need a database like Firebase. 
+    // For now, this code hides the buttons so fans can't mess with it.
+</script>
+</body>
+</html>
