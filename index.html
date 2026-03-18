@@ -1,145 +1,205 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Simple Rugby League Scoreboard</title>
+<title>Ultra Rugby Scoreboard</title>
 
 <style>
 body {
-  font-family: Arial;
-  background:#111;
-  color:white;
-  text-align:center;
+    margin:0;
+    font-family:Arial;
+    background:#000;
+    color:white;
 }
 
-.scoreboard {
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  margin-top:40px;
+/* SCOREBAR */
+.scorebar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px;
+    background:#111;
 }
 
 .team {
-  width:40%;
+    display:flex;
+    align-items:center;
+    gap:10px;
 }
 
-.team img {
-  width:100px;
-  height:100px;
-  object-fit:contain;
-}
+.score { font-size:40px; }
+.clock { font-size:28px; text-align:center; }
 
-.score {
-  font-size:60px;
-  margin:10px;
-}
+.panel { padding:10px; }
 
-#clock {
-  font-size:40px;
-  margin-top:20px;
-}
+/* THEMES */
+.storm { background:#2b0a3d; }
+.broncos { background:#5a0000; }
+.default { background:#111; }
 
-button {
-  padding:10px;
-  margin:5px;
-  font-size:16px;
-}
+/* OVERLAY */
+.overlay .panel { display:none; }
 </style>
 </head>
 
-<body>
+<body class="default">
 
-<h1>Rugby League Scoreboard</h1>
+<div class="scorebar">
+    <div class="team">
+        <img id="logo1" width="50">
+        <span id="name1">TEAM 1</span>
+        <span class="score" id="score1">0</span>
+    </div>
 
-<div id="clock">00:00</div>
-<button onclick="startClock()">Start</button>
-<button onclick="pauseClock()">Pause</button>
-<button onclick="resetClock()">Reset</button>
+    <div class="clock">
+        <div id="clock">00:00</div>
+        <div id="half">1ST HALF</div>
+    </div>
 
-<div class="scoreboard">
+    <div class="team">
+        <span class="score" id="score2">0</span>
+        <span id="name2">TEAM 2</span>
+        <img id="logo2" width="50">
+    </div>
+</div>
 
-  <!-- TEAM A -->
-  <div class="team">
-    <input id="nameA" placeholder="Team A"><br>
-    <input type="file" id="logoA"><br>
-    <img id="imgA"><br>
+<div class="panel">
 
-    <div class="score" id="scoreA">0</div>
+<h3>Teams</h3>
+<input id="t1" placeholder="Team 1">
+<input id="t2" placeholder="Team 2"><br>
 
-    <button onclick="addScore('A',4)">Try (+4)</button>
-    <button onclick="addScore('A',2)">Goal (+2)</button>
-    <button onclick="addScore('A',1)">FG (+1)</button>
-    <button onclick="addScore('A',-1)">-1</button>
-  </div>
+<input type="file" onchange="logo(event,1)">
+<input type="file" onchange="logo(event,2)">
 
-  <!-- TEAM B -->
-  <div class="team">
-    <input id="nameB" placeholder="Team B"><br>
-    <input type="file" id="logoB"><br>
-    <img id="imgB"><br>
+<h3>Scoring</h3>
+<button onclick="tryScore(1)">TRY</button>
+<button onclick="goal(1)">GOAL</button>
+<button onclick="fg(1)">FG</button>
 
-    <div class="score" id="scoreB">0</div>
+<button onclick="tryScore(2)">TRY</button>
+<button onclick="goal(2)">GOAL</button>
+<button onclick="fg(2)">FG</button>
 
-    <button onclick="addScore('B',4)">Try (+4)</button>
-    <button onclick="addScore('B',2)">Goal (+2)</button>
-    <button onclick="addScore('B',1)">FG (+1)</button>
-    <button onclick="addScore('B',-1)">-1</button>
-  </div>
+<h3>Game</h3>
+<button onclick="start()">Start</button>
+<button onclick="pause()">Pause</button>
+<button onclick="reset()">Reset</button>
+<button onclick="nextHalf()">Next Half</button>
+
+<h3>Extras</h3>
+<button onclick="overlay()">Overlay</button>
+<button onclick="setTheme('storm')">Storm Theme</button>
+<button onclick="setTheme('broncos')">Broncos Theme</button>
+
+<h3>Online Share</h3>
+<button onclick="host()">Host Game</button>
+<input id="joinCode" placeholder="Enter code">
+<button onclick="join()">Join</button>
 
 </div>
 
 <script>
-// SCORES
-let scoreA = 0;
-let scoreB = 0;
+let s1=0,s2=0,sec=0,timer=null,half=1;
 
-function addScore(team, pts){
-  if(team === 'A'){
-    scoreA += pts;
-    document.getElementById("scoreA").innerText = scoreA;
-  } else {
-    scoreB += pts;
-    document.getElementById("scoreB").innerText = scoreB;
-  }
+// UPDATE
+function update(){
+    score1.innerText=s1;
+    score2.innerText=s2;
+    name1.innerText=t1.value||"TEAM 1";
+    name2.innerText=t2.value||"TEAM 2";
+
+    let m=Math.floor(sec/60),s=sec%60;
+    clock.innerText=String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');
+    halfText = half===1?"1ST HALF":"2ND HALF";
+    document.getElementById("half").innerText=halfText;
+
+    sendData();
 }
+
+// SCORING
+function tryScore(t){ if(t===1)s1+=4; else s2+=4; playSound("try"); update();}
+function goal(t){ if(t===1)s1+=2; else s2+=2; update();}
+function fg(t){ if(t===1)s1+=1; else s2+=1; update();}
 
 // CLOCK
-let seconds = 0;
-let timer = null;
+function start(){ if(!timer) timer=setInterval(()=>{sec++;update();},1000);}
+function pause(){ clearInterval(timer); timer=null;}
+function reset(){ pause(); sec=0; update();}
 
-function updateClock(){
-  seconds++;
-  let m = Math.floor(seconds/60);
-  let s = seconds % 60;
-  document.getElementById("clock").innerText =
-    String(m).padStart(2,'0') + ":" + String(s).padStart(2,'0');
+// HALF
+function nextHalf(){
+    if(half===1){ half=2; playSound("siren"); }
+    else { playSound("siren"); pause(); alert("FULL TIME"); }
+    update();
 }
 
-function startClock(){
-  if(!timer) timer = setInterval(updateClock,1000);
+// LOGO
+function logo(e,t){
+    let r=new FileReader();
+    r.onload=()=>document.getElementById("logo"+t).src=r.result;
+    r.readAsDataURL(e.target.files[0]);
 }
 
-function pauseClock(){
-  clearInterval(timer);
-  timer = null;
+// OVERLAY
+function overlay(){ document.body.classList.toggle("overlay"); }
+
+// THEMES
+function setTheme(t){
+    document.body.className=t;
 }
 
-function resetClock(){
-  pauseClock();
-  seconds = 0;
-  document.getElementById("clock").innerText = "00:00";
+// SOUND
+function playSound(type){
+    let audio=new Audio();
+    if(type==="siren") audio.src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg";
+    if(type==="try") audio.src="https://actions.google.com/sounds/v1/crowds/crowd_cheer.ogg";
+    audio.play();
 }
 
-// LOGOS
-document.getElementById("logoA").onchange = e => {
-  document.getElementById("imgA").src =
-    URL.createObjectURL(e.target.files[0]);
-};
+// CONTROLLER SUPPORT
+setInterval(()=>{
+    let gp=navigator.getGamepads()[0];
+    if(!gp) return;
 
-document.getElementById("logoB").onchange = e => {
-  document.getElementById("imgB").src =
-    URL.createObjectURL(e.target.files[0]);
-};
+    if(gp.buttons[0].pressed) tryScore(1);
+    if(gp.buttons[1].pressed) goal(1);
+    if(gp.buttons[2].pressed) fg(1);
+
+    if(gp.buttons[3].pressed) tryScore(2);
+},200);
+
+// ONLINE (simple broadcast)
+let channel=null;
+
+function host(){
+    channel=new BroadcastChannel("scoreboard");
+    alert("Hosting started");
+}
+
+function join(){
+    channel=new BroadcastChannel("scoreboard");
+    channel.onmessage=(e)=>{
+        let d=e.data;
+        s1=d.s1; s2=d.s2; sec=d.sec; half=d.half;
+        update();
+    };
+}
+
+function sendData(){
+    if(channel){
+        channel.postMessage({s1,s2,sec,half});
+    }
+}
+
+// PWA INSTALL
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register(URL.createObjectURL(new Blob([`
+        self.addEventListener('fetch', e=>{});
+    `],{type:'text/javascript'})));
+}
+
+update();
 </script>
 
 </body>
